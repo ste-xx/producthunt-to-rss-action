@@ -10,7 +10,7 @@ async function run(): Promise<void> {
     const fetchedState = await fetchData({
       minVotes: parseInt(core.getInput('minVotes'), 10),
       client_id: core.getInput('client_id'),
-      client_secret: core.getState('client_secret')
+      client_secret: core.getInput('client_secret')
     })
 
     const newState = removeOldEntries(

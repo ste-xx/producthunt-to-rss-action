@@ -104,7 +104,7 @@ function run() {
             const fetchedState = yield (0, fetch_data_1.fetchData)({
                 minVotes: parseInt(core.getInput('minVotes'), 10),
                 client_id: core.getInput('client_id'),
-                client_secret: core.getState('client_secret')
+                client_secret: core.getInput('client_secret')
             });
             const newState = (0, process_1.removeOldEntries)(Object.assign(Object.assign({}, oldState), fetchedState), parseInt(core.getInput('retention'), 10));
             const items = Object.entries(newState).map(([, item]) => item);
