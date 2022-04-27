@@ -25,7 +25,7 @@ inputs:
   title:
     required: true
     description: 'title for the json feed'
-    default: 'Reddit'
+    default: 'ProductHunt'
 outputs:
   state:
     description: 'State for the action. Needs to be added in the next run'
