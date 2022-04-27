@@ -1,6 +1,65 @@
 require('./sourcemap-register.js');/******/ (() => { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
 
+/***/ 966:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.fetchData = void 0;
+const http_client_1 = __nccwpck_require__(925);
+const getAccessToken = ({ client_id, client_secret }) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    const client = new http_client_1.HttpClient();
+    const result = yield client.postJson('https://api.producthunt.com/v1/oauth/token', {
+        client_id,
+        client_secret,
+        grant_type: 'client_credentials'
+    }, {
+        Host: 'api.producthunt.com'
+    });
+    if (!result.result) {
+        throw new Error('missing access token');
+    }
+    return (_a = result.result) === null || _a === void 0 ? void 0 : _a.access_token;
+});
+const fetchData = (input) => __awaiter(void 0, void 0, void 0, function* () {
+    var _b, _c;
+    const accessToken = yield getAccessToken(input);
+    const client = new http_client_1.HttpClient();
+    const response = yield client.getJson('https://api.producthunt.com/v1/posts', {
+        Host: 'api.producthunt.com',
+        Authorization: `Bearer ${accessToken}`
+    });
+    const posts = (_c = (_b = response.result) === null || _b === void 0 ? void 0 : _b.posts) !== null && _c !== void 0 ? _c : [];
+    return Object.fromEntries(posts
+        .filter(({ votes_count }) => votes_count > input.minVotes)
+        .map(({ id, name, tagline, votes_count, discussion_url }) => [
+        id,
+        {
+            id: `${id}`,
+            url: discussion_url,
+            created: new Date().getTime(),
+            title: `${name} (${votes_count})`,
+            content_text: `${tagline}`
+        }
+    ]));
+});
+exports.fetchData = fetchData;
+
+
+/***/ }),
+
 /***/ 109:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -36,16 +95,33 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(186));
-const wait_1 = __nccwpck_require__(817);
+const fetch_data_1 = __nccwpck_require__(966);
+const process_1 = __nccwpck_require__(647);
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            const ms = core.getInput('milliseconds');
-            core.debug(`Waiting ${ms} milliseconds ...`); // debug is only output if you set the secret `ACTIONS_STEP_DEBUG` to true
-            core.debug(new Date().toTimeString());
-            yield (0, wait_1.wait)(parseInt(ms, 10));
-            core.debug(new Date().toTimeString());
-            core.setOutput('time', new Date().toTimeString());
+            const oldState = JSON.parse(core.getInput('state'));
+            const fetchedState = yield (0, fetch_data_1.fetchData)({
+                minVotes: parseInt(core.getInput('minVotes'), 10),
+                client_id: core.getInput('client_id'),
+                client_secret: core.getState('client_secret')
+            });
+            const newState = (0, process_1.removeOldEntries)(Object.assign(Object.assign({}, oldState), fetchedState), parseInt(core.getInput('retention'), 10));
+            const items = Object.entries(newState).map(([, item]) => item);
+            items.sort((a, b) => a.created - b.created);
+            const jsonFeed = {
+                version: 'https://jsonfeed.org/version/1',
+                title: core.getInput('title'),
+                feed_url: core.getInput('feedUrl'),
+                items: items.reverse().map(({ id, title, url, content_text }) => ({
+                    id,
+                    title,
+                    content_text,
+                    url
+                }))
+            };
+            core.setOutput('state', JSON.stringify(newState, null, 2));
+            core.setOutput('jsonFeed', jsonFeed);
         }
         catch (error) {
             if (error instanceof Error)
@@ -58,33 +134,19 @@ run();
 
 /***/ }),
 
-/***/ 817:
-/***/ (function(__unused_webpack_module, exports) {
+/***/ 647:
+/***/ ((__unused_webpack_module, exports) => {
 
 "use strict";
 
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.wait = void 0;
-function wait(milliseconds) {
-    return __awaiter(this, void 0, void 0, function* () {
-        return new Promise(resolve => {
-            if (isNaN(milliseconds)) {
-                throw new Error('milliseconds not a number');
-            }
-            setTimeout(() => resolve('done!'), milliseconds);
-        });
-    });
-}
-exports.wait = wait;
+exports.removeOldEntries = void 0;
+const removeOldEntries = (map, retention) => {
+    const DAY_IN_MS = 86400000;
+    const deleteAfter = DAY_IN_MS * retention;
+    return Object.fromEntries(Object.entries(map).filter(([, { created = 0 }]) => new Date().getTime() - created < deleteAfter));
+};
+exports.removeOldEntries = removeOldEntries;
 
 
 /***/ }),
