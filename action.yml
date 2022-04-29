@@ -5,6 +5,7 @@ inputs:
   state:
     required: true
     description: 'state as json'
+    default: '{}'
   client_id:
     required: true
     description: 'client id for the productHunt api'
