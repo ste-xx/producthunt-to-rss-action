@@ -42,7 +42,7 @@ A running workflow can be found [here](https://github.com/ste-xx/rss-watch)
 | Name  | Description | Type | DefaultValue | Mandatory |
 | ----- | ----------- | ---- | ------------ | --------- | 
 | minVotes  | Min votes to fetch entry | 'Number' | '350' |
-| title | Title for the Rss feed | String | 'HackerNews' |
+| title | Title for the Rss feed | String | 'ProductHunt' |
 | feedUrl | Url where the generated feed is reachable. | URL |  | ✅ 
 | state | Hold the state from the previous run. If not set a flickering rss feed could occur, because entries could match the criteria and the next run the criteria is not met.  | Stringified Object | '{}' | 
 | retention | How long an entry will be preserved, even if the criteria is not met. | 'Number' | '10' |
