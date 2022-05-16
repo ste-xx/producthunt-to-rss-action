@@ -35,7 +35,7 @@ Example
      EOF
 ``` 
 
-A running workflow can be found [here](https://github.com/ste-xx/rss-watch)
+A running workflow can be found [here](https://github.com/ste-xx/rss-watch/blob/main/.github/workflows/ph.yml)
 
 
 ## Options
